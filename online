@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# List all online players from UrT DN server
+URL=http://drunknoobs.com/server-info/eagle-24-7
+
+wget -qO- $URL | tr -d '\n' | grep -oP ' {32}\K([^<]+) {32}' \
+			   | perl -MHTML::Entities -pe 'decode_entities($_);'
+
