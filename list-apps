@@ -1,6 +1,6 @@
 #!/bin/bash
-
-# Lists all user-installed packages
+#
+# List all user-installed packages on a debian system
 
 logfile="/var/log/apt/history.log"
 logs="zcat $logfile.*.gz | cat - $logfile"
