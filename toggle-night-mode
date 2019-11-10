@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Toggle night mode in GNOME
-# Binded to ctrl + alt + n
+# Bound to ctrl + alt + n
 
 status=$(gsettings get org.gnome.settings-daemon.plugins.color night-light-enabled)
 
