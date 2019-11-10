@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Toggle between tlp setcharge/fullcharge
+# Bound to ctrl + alt + t
+
+STOP_TRESHOLD=$(sudo tlp stat | grep tpacpi-bat.BAT0.stopThreshold \
+							  | awk '{print $3}')
+
+if [[ $STOP_TRESHOLD -eq 100 ]]; then
+	zenity --notification --text="$(sudo tlp setcharge)"
+else
+	zenity --notification --text="$(sudo tlp fullcharge)"
+fi
+
