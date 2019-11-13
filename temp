@@ -1,0 +1,5 @@
+#!/bin/bash
+#
+# Measure CPU temperature
+
+cat /sys/class/thermal/thermal_zone1/temp | sed 's/\(.\)..$/.\1°C/'
