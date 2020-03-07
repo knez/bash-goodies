@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# Notify via email when a desired crypto-coin price has been reached
+# Intended to be run on restricted embedded devices (ideally by a cronjob)
+#
+# Minimum requirements: (ships with a minimal BusyBox installation)
+# 	- awk
+# 	- wget
+# 	- nc
+# 	- grep
+#
+# Tested on AdvancedTomato router
+
+#-------------------------------------------
+# define coins to be tracked
+coins="ADA IOTA"
+prices="0.00001 0.00012"
+
+# email settings (only servers without auth)
+smtp_server=""
+smtp_port=25
+sender_email=""
+rcpt_email=""
+#-------------------------------------------
+
+coins=$(echo $coins | tr -s ' ' ',')
+api_url="https://min-api.cryptocompare.com/\
+data/pricemulti?fsyms=$coins&tsyms=BTC"
+
+cmp() {
+	awk -v a="$1" -v b="$2" 'BEGIN {print((a>=b)? " ":"")}'
+}
+
+mail() {
+	# craft a valid SMTP header
+	HEADER=`
+		echo "HELO $smtp_server"
+		echo "MAIL FROM:<$sender_email>"
+		echo "RCPT TO:<$rcpt_email>"
+		echo "DATA"
+		echo "From: $sender_email"
+		echo "To: <$rcpt_email>"
+		date '+Date: %a, %d %b %Y %H:%M:%S %z'
+		echo "Subject: update"
+		echo "$1"
+		echo "."
+	`
+
+	# feed the data slowly
+	echo "$HEADER" |
+	while read L; do
+		sleep 3;
+		printf "%s\r\n" "$L"
+	done | nc $smtp_server $port
+}
+
+response=`wget -qO- "$api_url" | grep -oE '[0]\.[0-9]+'`
+
+# detect error and report
+if [ -z "$response" ]; then
+	mail "An error has occured."
+	exit 1;
+fi
+
+counter=1
+for current_price in $response
+do
+	# get matching price
+	exp=`echo $prices | awk '{print $'$counter'}'`
+
+	if  [ -n "`cmp $current_price $exp`" ]; then
+		coin=`echo $coins | awk -F',' '{print $'$counter'}'`
+		mail "$coin has reached $current_price BTC!"
+	fi
+	counter=`expr $counter + 1`
+done
+
+# debug
+#date '+%d.%m - %H:%M:%S' >> /root/log.txt
+
