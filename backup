@@ -1,0 +1,8 @@
+#!/bin/bash
+#
+# Backup /home to gdrive
+# Executed by anacron every week
+rclone -v -L sync ~ remote: --exclude "Downloads/**" \
+                            --exclude ".*{/**,}" \
+                            --exclude "Music/**"
+
