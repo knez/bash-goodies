@@ -1,0 +1,8 @@
+#!/bin/bash
+#
+# Print how many days have passed since the last backup
+
+LAST=$(sudo cat /var/spool/anacron/backup.weekly)
+NOW=$(date +%s)
+echo $(((NOW-$(date +%s --date "$LAST"))/(3600*24))) days ago
+
