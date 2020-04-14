@@ -1,9 +1,9 @@
 #!/bin/bash
 #
 # Display top 10 biggest files in the directory specified by the first argument
-# If the argument is ommited, home directory is used instead.
+# If the argument is ommited, current directory is used instead.
 
-[[ -n "$1" ]] && DIR="$1" || DIR="$HOME"
+[[ -n "$1" ]] && DIR="$1" || DIR="."
 
 find "$DIR" -type f -print0 | xargs -0 du \
                             | sort -nr | head | cut -f2 \
