@@ -1,0 +1,114 @@
+#!/bin/bash
+#
+# Download songs from youtube into GNOME Music playlists
+#
+# Usage: yt2playlist URL [playlist]
+#
+#     URL: a youtube link to a single song
+#     playlist: name of the playlist in GNOME Music (defaults to "misc")
+# 
+# Procedure:
+#     1) Download mp3 from the video
+#     2) Move it into the folder ~/Music/Playlists/[playlist]
+#     4) In GNOME Music, create new playlist [playlist] if it doesn't exist
+#     3) Add the song to the playlist [playlist]
+#
+# Requirements: 
+#     - youtube-dl
+#     - ffmpeg
+#     - GNOME Music
+#
+
+playlist="misc"                    # default playlist name
+basedir="$HOME/Music/Playlists"    # base dir for playlists storage
+
+create_playlist() {
+    query="
+    INSERT {
+        _:playlist
+        a nmm:Playlist;
+        a nfo:MediaList;
+        nie:title '$1';
+        nfo:entryCounter 0 .
+    }"
+    tracker sparql -u -q "$query" >/dev/null
+}
+
+get_playlist_id() {
+    query="
+    SELECT DISTINCT
+        tracker:id(?playlist) AS ?id
+        {
+            ?playlist a nmm:Playlist .
+            FILTER (nie:title(?playlist) = '$1')
+    }"
+    tracker sparql -q "$query" | grep -o '[0-9]*'
+}
+
+add_to_playlist() {
+    query="
+    INSERT OR REPLACE {
+        _:entry
+            a nfo:MediaFileListEntry ;
+            nfo:entryUrl '$1' ;
+            nfo:listPosition ?position .
+        ?playlist
+            nfo:entryCounter ?position ;
+            nfo:hasMediaFileListEntry _:entry .
+    }
+    WHERE {
+        SELECT
+            ?playlist
+            (?counter + 1) AS ?position
+        WHERE {
+            ?playlist
+                a nmm:Playlist ;
+                a nfo:MediaList ;
+                nfo:entryCounter ?counter .
+            FILTER (
+                tracker:id(?playlist) = $2
+            )
+        }
+    }"
+    tracker sparql -u -q "$query" >/dev/null
+}
+
+get_file_uri() {
+    echo "file://$basedir/$playlist/$(echo "$1" | sed 's/\ /%20/g')"
+}
+
+parse_arguments() {
+    if [[ $# -lt 1 ]] || [[ $# -gt 2 ]];
+    then
+        echo "Usage: $(basename $0) URL [playlist]";
+        exit 1;
+    fi
+    # optional second argument
+    if [[ -n "$2" ]]; 
+    then 
+        # override default playlist name
+        playlist="$2";
+    fi
+}
+
+parse_arguments $@
+
+mkdir -p "$basedir/$playlist" && cd "$basedir/$playlist";
+
+# fetch song
+filename=$(youtube-dl --get-filename -o "%(title)s" "$1")
+youtube-dl -x --audio-format=mp3 --add-metadata "$1" -o "$filename.webm";
+
+p_id=$(get_playlist_id "$playlist")
+# if playlist does not exist
+if [[ -z $p_id ]];
+then
+    create_playlist "$playlist"
+    p_id=$(get_playlist_id "$playlist")
+fi
+
+file_uri=$(get_file_uri "$filename")
+add_to_playlist $file_uri $p_id
+
+echo "Done"
+
