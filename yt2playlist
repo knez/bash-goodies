@@ -99,6 +99,13 @@ mkdir -p "$basedir/$playlist" && cd "$basedir/$playlist";
 filename=$(youtube-dl --get-filename -o "%(title)s" "$1")
 youtube-dl -x --audio-format=mp3 --add-metadata "$1" -o "$filename.webm";
 
+while [[ $? -ne 0 ]];
+do
+    echo "Trying again in 10 sec..."
+    sleep 10
+    youtube-dl -x --audio-format=mp3 --add-metadata "$1" -o "$filename.webm";
+done
+
 p_id=$(get_playlist_id "$playlist")
 # if playlist does not exist
 if [[ -z $p_id ]];
