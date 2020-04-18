@@ -50,7 +50,7 @@ add_to_playlist() {
     INSERT OR REPLACE {
         _:entry
             a nfo:MediaFileListEntry ;
-            nfo:entryUrl '$1' ;
+            nfo:entryUrl \"$1\" ;
             nfo:listPosition ?position .
         ?playlist
             nfo:entryCounter ?position ;
@@ -74,7 +74,9 @@ add_to_playlist() {
 }
 
 get_file_uri() {
-    echo "file://$basedir/$playlist/${1// /%20}.mp3"
+    # strip problematic characters
+    file=$(echo "$1" | sed "s/\ /%20/g" | sed "s/\"/%22/g")
+    echo "file://$basedir/$playlist/$file.mp3"
 }
 
 parse_arguments() {
@@ -115,7 +117,7 @@ then
 fi
 
 file_uri=$(get_file_uri "$filename")
-add_to_playlist $file_uri $p_id
+add_to_playlist "$file_uri" $p_id
 
 echo "Done"
 
