@@ -74,7 +74,7 @@ add_to_playlist() {
 }
 
 get_file_uri() {
-    echo "file://$basedir/$playlist/$(echo "$1" | sed 's/\ /%20/g')"
+    echo "file://$basedir/$playlist/${1// /%20}.mp3"
 }
 
 parse_arguments() {
