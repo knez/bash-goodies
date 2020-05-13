@@ -50,7 +50,7 @@ add_to_playlist() {
     INSERT OR REPLACE {
         _:entry
             a nfo:MediaFileListEntry ;
-            nfo:entryUrl \"$1\" ;
+            nfo:entryUrl \"$(get_file_uri "$1")\" ;
             nfo:listPosition ?position .
         ?playlist
             nfo:entryCounter ?position ;
@@ -66,7 +66,7 @@ add_to_playlist() {
                 a nfo:MediaList ;
                 nfo:entryCounter ?counter .
             FILTER (
-                tracker:id(?playlist) = $2
+                tracker:id(?playlist) = $(get_playlist_id "$2")
             )
         }
     }"
@@ -80,7 +80,7 @@ get_file_uri() {
 }
 
 parse_arguments() {
-    if [[ $# -lt 1 ]] || [[ $# -gt 2 ]];
+    if [[ $# -lt 1 ]] || [[ $# -gt 2 ]]
     then
         echo "Usage: $(basename $0) URL [playlist]";
         exit 1;
@@ -93,31 +93,30 @@ parse_arguments() {
     fi
 }
 
+fetch_song() {
+    youtube-dl --rm-cache-dir -x --audio-format=mp3 \
+               --add-metadata "$1" -o "$filename.webm";
+}
+
 parse_arguments $@
 
-mkdir -p "$basedir/$playlist" && cd "$basedir/$playlist";
+mkdir -p "$basedir/$playlist" && cd "$_";
 
-# fetch song
 filename=$(youtube-dl --get-filename -o "%(title)s" "$1")
-youtube-dl -x --audio-format=mp3 --add-metadata "$1" -o "$filename.webm";
 
-while [[ $? -ne 0 ]];
+until fetch_song $1
 do
     echo "Trying again in 10 sec..."
     sleep 10
-    youtube-dl -x --audio-format=mp3 --add-metadata "$1" -o "$filename.webm";
 done
 
-p_id=$(get_playlist_id "$playlist")
-# if playlist does not exist
-if [[ -z $p_id ]];
+# playlist does not exist
+if [[ -z $(get_playlist_id "$playlist") ]]
 then
     create_playlist "$playlist"
-    p_id=$(get_playlist_id "$playlist")
 fi
 
-file_uri=$(get_file_uri "$filename")
-add_to_playlist "$file_uri" $p_id
+add_to_playlist "$filename" "$playlist"
 
 echo "Done"
 
