@@ -4,5 +4,5 @@
 URL=https://drunknoobs.com/server/eagle-24-7
 
 wget -qO- $URL | tr -d '\n' | grep -oP 'config=0"> \K([^ ])+' \
-			   | perl -MHTML::Entities -pe 'decode_entities($_);'
+               | perl -MHTML::Entities -pe 'decode_entities($_);'
 
