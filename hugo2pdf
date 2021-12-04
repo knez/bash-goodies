@@ -1,0 +1,44 @@
+#!/bin/bash
+# ./hugo2pdf url-of-the-post
+# Converts HUGO generated blog post into PDF
+
+if [[ -z $1 ]]; then
+    echo 'Please provide URL of the post'
+    exit 1;
+fi
+
+cwd=$PWD
+
+css_style="
+@page { 
+    size: A4; /* Change from the default size of A4 */
+    margin: 10mm -10mm 10mm -10mm; /* Set margin on each page */
+}
+
+#single {
+    max-width: 100%;
+}"
+
+cd $HOME/Projects/blog
+
+echo 'relativeURLs: true' > /tmp/rel.yaml
+hugo --config config.yaml,/tmp/rel.yaml
+
+# remove header, footer, comments
+cd public/posts/$1
+sed -z -r -i 's/<nav.*Subscribe//g' index.html
+sed -z -r -i 's/<footer.*footer>//g' index.html
+sed -z -r -i 's/<div class="tags".*div>//g' index.html
+
+# todo, line wrapping
+echo 'Now processing md file'
+weasyprint -q -s <(echo "$css_style") index.html $cwd/report.pdf
+
+echo 'Finished generating report'
+ 
+# cleanup
+rm /tmp/rel.yaml
+rm index.html
+
+open $cwd/report.pdf
+
